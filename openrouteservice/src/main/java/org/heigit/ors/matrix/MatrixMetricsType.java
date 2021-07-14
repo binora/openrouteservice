@@ -25,9 +25,11 @@ public class MatrixMetricsType {
 	public static final int DURATION = 1;
 	public static final int DISTANCE = 2;
 	public static final int WEIGHT = 4;
+	public static final int DETAILS = 5;
 	public static final String KEY_DURATION = "duration";
 	public static final String KEY_DISTANCE = "distance";
 	public static final String KEY_WEIGHT = "weight";
+	public static final String KEY_DETAILS = "details";
 	public static final String KEY_UNKNOWN = "unknown";
 
 	private MatrixMetricsType() {}
@@ -53,6 +55,9 @@ public class MatrixMetricsType {
 					break;
 				case KEY_WEIGHT:
 					res |= WEIGHT;
+					break;
+				case KEY_DETAILS:
+					res |= DETAILS;
 					break;
 				default:
 					return UNKNOWN;
