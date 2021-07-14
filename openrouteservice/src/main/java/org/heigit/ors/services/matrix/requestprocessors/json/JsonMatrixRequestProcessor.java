@@ -75,6 +75,8 @@ public class JsonMatrixRequestProcessor extends AbstractHttpRequestProcessor {
 			jResp.put("durations", createTable(mtxResult.getTable(MatrixMetricsType.DURATION), request.getSources().length, request.getDestinations().length));
 		if (MatrixMetricsType.isSet(request.getMetrics(), MatrixMetricsType.WEIGHT))
 			jResp.put("weights", createTable(mtxResult.getTable(MatrixMetricsType.WEIGHT), request.getSources().length, request.getDestinations().length));
+		if (MatrixMetricsType.isSet(request.getMetrics(), MatrixMetricsType.DETAILS))
+			jResp.put("details", mtxResult.getDetailsMatrix());
 
 		jResp.put("destinations", createLocations(mtxResult.getDestinations(), request.getResolveLocations()));
 		jResp.put("sources", createLocations(mtxResult.getSources(), request.getResolveLocations()));

@@ -24,7 +24,8 @@ import static org.heigit.ors.matrix.MatrixErrorCodes.INVALID_PARAMETER_VALUE;
 public class MatrixRequestEnums {
     public enum Metrics {
         DISTANCE("distance"),
-        DURATION("duration");
+        DURATION("duration"),
+        DETAILS("details");
 
         private final String value;
 

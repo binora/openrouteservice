@@ -24,16 +24,22 @@ import com.graphhopper.util.CHEdgeIteratorState;
 import com.graphhopper.util.EdgeIterator;
 import com.graphhopper.util.EdgeIteratorState;
 
+import com.graphhopper.util.PointList;
 import org.heigit.ors.common.DistanceUnit;
 import org.heigit.ors.routing.graphhopper.extensions.storages.MultiTreeSPEntry;
 import org.heigit.ors.routing.graphhopper.extensions.storages.MultiTreeSPEntryItem;
 import org.heigit.ors.util.DistanceUnitUtil;
+
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 public class MultiTreeMetricsExtractor {
 	private class MetricsItem {
 		private double time;
 		private double distance;
 		private double weight;
+		private List<EdgeDetail> edgeDetails;
 
 		public double getTime() {
 			return time;
@@ -111,7 +117,7 @@ public class MultiTreeMetricsExtractor {
 	}
 
 	public void calcValues(MultiTreeSPEntry[] targets, MatrixLocations srcData, MatrixLocations dstData, float[] times,
-			float[] distances, float[] weights) throws Exception {
+			float[] distances, float[] weights, List<List<EdgeDetail>> detailsMatrix) throws Exception {
 		if (targets == null)
 			throw new IllegalStateException("Target destinations not set");
 
@@ -123,6 +129,7 @@ public class MultiTreeMetricsExtractor {
 		boolean calcTime = MatrixMetricsType.isSet(metrics, MatrixMetricsType.DURATION);
 		boolean calcDistance = MatrixMetricsType.isSet(metrics, MatrixMetricsType.DISTANCE);
 		boolean calcWeight = MatrixMetricsType.isSet(metrics, MatrixMetricsType.WEIGHT);
+		boolean calcEdgeDetails = MatrixMetricsType.isSet(metrics, MatrixMetricsType.DETAILS);
 		MetricsItem edgeMetricsItem;
 		MultiTreeSPEntryItem sptItem;
 
@@ -132,6 +139,8 @@ public class MultiTreeMetricsExtractor {
 				pathTime = -1;
 				pathDistance = -1;
 				pathWeight = -1;
+				List<EdgeDetail> pathDetails = new ArrayList<>();
+
 
 				index = j * dstData.size() + i;
 
@@ -148,6 +157,8 @@ public class MultiTreeMetricsExtractor {
 						if (sptItem.getParent() != null) {
 							while (EdgeIterator.Edge.isValid(sptItem.getEdge())) {
 								edgeMetricsItem = null;
+								List<EdgeDetail> edgeDetails = new LinkedList<>();
+
 								if (edgeMetrics != null) {
 									entryHash = getMultiTreeSPEntryHash(targetEntry, srcNode);
 									edgeMetricsItem = edgeMetrics.get(entryHash);
@@ -164,13 +175,13 @@ public class MultiTreeMetricsExtractor {
 												if (chGraph.getLevel(iterState.getBaseNode()) > chGraph
 														.getLevel(iterState.getAdjNode())) {
 													reverseOrder = true;
-													extractEdgeValues(iterState, false);
+													extractEdgeValues(iterState, false, edgeDetails);
 												} else {
 													reverseOrder = false;
-													extractEdgeValues(iterState, true);
+													extractEdgeValues(iterState, true, edgeDetails);
 												}
 											} else {
-												extractEdgeValues(iterState, false);
+												extractEdgeValues(iterState, false, edgeDetails);
 											}
 
 											if (unpackDistance)
@@ -199,6 +210,10 @@ public class MultiTreeMetricsExtractor {
 
 										if (calcWeight)
 											edgeWeight = weighting.calcWeight(iter, false, EdgeIterator.NO_EDGE);
+
+										if (calcEdgeDetails)
+											extractExtraDetails(iter, edgeDetails);
+
 									}
 
 									if (edgeMetrics != null) {
@@ -206,6 +221,7 @@ public class MultiTreeMetricsExtractor {
 										edgeMetricsItem.distance = edgeDistance;
 										edgeMetricsItem.time = edgeTime;
 										edgeMetricsItem.weight = edgeWeight;
+										edgeMetricsItem.edgeDetails = edgeDetails;
 										edgeMetrics.put(entryHash, edgeMetricsItem);
 									}
 
@@ -219,6 +235,8 @@ public class MultiTreeMetricsExtractor {
 										pathTime += edgeMetricsItem.time;
 									if (calcWeight)
 										pathWeight += edgeMetricsItem.weight;
+									if (calcEdgeDetails)
+										edgeDetails = edgeMetricsItem.edgeDetails;
 								}
 
 								targetEntry = sptItem.getParent();
@@ -227,6 +245,8 @@ public class MultiTreeMetricsExtractor {
 									break;
 
 								sptItem = targetEntry.getItem(srcNode);
+
+								pathDetails.addAll(edgeDetails);
 							}
 						}
 					}
@@ -241,6 +261,9 @@ public class MultiTreeMetricsExtractor {
 
 				if (calcWeight)
 					weights[index] = (float) pathWeight;
+
+				if (calcEdgeDetails)
+				    detailsMatrix.add(pathDetails);
 			}
 		}
 	}
@@ -249,7 +272,7 @@ public class MultiTreeMetricsExtractor {
 		return entry.getAdjNode() * maxEdgeId + entry.getItem(sptEntry).getEdge();
 	}
 
-	private void extractEdgeValues(CHEdgeIteratorState iterState, boolean reverse) {
+	private void extractEdgeValues(CHEdgeIteratorState iterState, boolean reverse, List<EdgeDetail> edgeDetails) {
 		if (iterState.isShortcut()) {
 			edgeDistance = 0.0;
 			edgeTime = 0.0;
@@ -258,7 +281,7 @@ public class MultiTreeMetricsExtractor {
 			if ((chGraph.getLevel(iterState.getBaseNode()) < chGraph.getLevel(iterState.getAdjNode())))
 				reverse = !reverse;
 
-			expandEdge(iterState, reverse);
+			expandEdge(iterState, reverse, edgeDetails);
 		} else {
 			if (MatrixMetricsType.isSet(metrics, MatrixMetricsType.DISTANCE))
 				edgeDistance = iterState.getDistance();
@@ -266,10 +289,14 @@ public class MultiTreeMetricsExtractor {
 				edgeTime = weighting.calcMillis(iterState, reverse, EdgeIterator.NO_EDGE) / 1000.0;
 			if (MatrixMetricsType.isSet(metrics, MatrixMetricsType.WEIGHT))
 				edgeWeight = weighting.calcWeight(iterState, reverse, EdgeIterator.NO_EDGE);
+			if (MatrixMetricsType.isSet(metrics, MatrixMetricsType.WEIGHT))
+				edgeWeight = weighting.calcWeight(iterState, reverse, EdgeIterator.NO_EDGE);
+			if (MatrixMetricsType.isSet(metrics, MatrixMetricsType.DETAILS))
+				extractExtraDetails(iterState, edgeDetails);
 		}
 	}
 
-	private void expandEdge(CHEdgeIteratorState iterState, boolean reverse) {
+	private void expandEdge(CHEdgeIteratorState iterState, boolean reverse, List<EdgeDetail> edgeDetails) {
 		if (!iterState.isShortcut()) {
 			if (MatrixMetricsType.isSet(metrics, MatrixMetricsType.DISTANCE))
 				edgeDistance += iterState.getDistance();
@@ -277,6 +304,11 @@ public class MultiTreeMetricsExtractor {
 				edgeTime += weighting.calcMillis(iterState, reverse, EdgeIterator.NO_EDGE) / 1000.0;
 			if (MatrixMetricsType.isSet(metrics, MatrixMetricsType.WEIGHT))
 				edgeWeight += weighting.calcWeight(iterState, reverse, EdgeIterator.NO_EDGE);
+			if (MatrixMetricsType.isSet(metrics, MatrixMetricsType.WEIGHT))
+				edgeWeight += weighting.calcWeight(iterState, reverse, EdgeIterator.NO_EDGE);
+			if (MatrixMetricsType.isSet(metrics, MatrixMetricsType.DETAILS))
+				extractExtraDetails(iterState, edgeDetails);
+
 			return;
 		}
 
@@ -300,28 +332,35 @@ public class MultiTreeMetricsExtractor {
 			if (empty)
 				edgeState = chGraph.getEdgeIteratorState(skippedEdge2, to);
 
-			expandEdge(edgeState, false);
+			expandEdge(edgeState, false, edgeDetails);
 
 			if (empty)
 				edgeState = chGraph.getEdgeIteratorState(skippedEdge1, from);
 			else
 				edgeState = chGraph.getEdgeIteratorState(skippedEdge2, from);
 
-			expandEdge(edgeState, true);
+			expandEdge(edgeState, true, edgeDetails);
 		} else {
 			CHEdgeIteratorState iter = chGraph.getEdgeIteratorState(skippedEdge1, from);
 			boolean empty = iter == null;
 			if (empty)
 				iter = chGraph.getEdgeIteratorState(skippedEdge2, from);
 
-			expandEdge(iter, true);
+			expandEdge(iter, true, edgeDetails);
 
 			if (empty)
 				iter = chGraph.getEdgeIteratorState(skippedEdge1, to);
 			else
 				iter = chGraph.getEdgeIteratorState(skippedEdge2, to);
 
-			expandEdge(iter, false);
+			expandEdge(iter, false, edgeDetails);
 		}
+	}
+
+	private void extractExtraDetails(EdgeIteratorState edge, List<EdgeDetail> edgeDetails) {
+		int edgeId = edge.getEdge();
+		EdgeDetail edgeDetail = new EdgeDetail(edgeId, edge.fetchWayGeometry(3));
+
+		edgeDetails.add(edgeDetail);
 	}
 }

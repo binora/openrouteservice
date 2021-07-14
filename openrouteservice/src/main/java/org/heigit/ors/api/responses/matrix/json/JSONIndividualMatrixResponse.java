@@ -18,6 +18,7 @@ package org.heigit.ors.api.responses.matrix.json;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.heigit.ors.api.requests.matrix.MatrixRequest;
+import org.heigit.ors.matrix.EdgeDetail;
 import org.heigit.ors.matrix.MatrixMetricsType;
 import org.heigit.ors.matrix.MatrixResult;
 import org.heigit.ors.util.FormatUtility;
@@ -45,13 +46,17 @@ public class JSONIndividualMatrixResponse extends JSONBasedIndividualMatrixRespo
     @JsonProperty("sources")
     private List<JSON2DSources> sources;
 
+    @JsonProperty("details")
+    private List<List<EdgeDetail>> details;
+
     JSONIndividualMatrixResponse(MatrixResult result, MatrixRequest request) {
         super(request);
 
         destinations = constructDestinations(result);
         sources = constructSources(result);
+        details = result.getDetailsMatrix();
 
-        for (int i=0; i<result.getTables().length; i++) {
+        for (int i = 0; i < result.getTables().length; i++) {
             if (result.getTable(i) != null) {
                 switch (i) {
                     case MatrixMetricsType.DURATION:
@@ -59,8 +64,6 @@ public class JSONIndividualMatrixResponse extends JSONBasedIndividualMatrixRespo
                         break;
                     case MatrixMetricsType.DISTANCE:
                         distances = constructMetric(result.getTable(i), result);
-                        break;
-                    default:
                         break;
                 }
             }
@@ -73,9 +76,9 @@ public class JSONIndividualMatrixResponse extends JSONBasedIndividualMatrixRespo
 
         Double[][] constructedTable = new Double[sourceCount][destinationCount];
 
-        for (int i=0; i<sourceCount; i++) {
-            for (int j=0; j<destinationCount; j++) {
-                double value = (double) table[(i*destinationCount) + j];
+        for (int i = 0; i < sourceCount; i++) {
+            for (int j = 0; j < destinationCount; j++) {
+                double value = (double) table[(i * destinationCount) + j];
                 if (value == -1)
                     constructedTable[i][j] = null;
                 else
@@ -116,5 +119,13 @@ public class JSONIndividualMatrixResponse extends JSONBasedIndividualMatrixRespo
 
     public void setSources(List<JSON2DSources> sources) {
         this.sources = sources;
+    }
+
+    public List<List<EdgeDetail>> getDetails() {
+        return details;
+    }
+
+    public void setDetails(List<List<EdgeDetail>> details) {
+        this.details = details;
     }
 }
