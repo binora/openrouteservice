@@ -22,6 +22,8 @@ import com.graphhopper.util.PMap;
 import com.vividsolutions.jts.geom.Polygon;
 import org.heigit.ors.routing.RouteSearchParameters;
 import org.heigit.ors.routing.graphhopper.extensions.edgefilters.*;
+import org.heigit.ors.routing.graphhopper.extensions.edgefilters.core.VariableSpeedCoreEdgeFilter;
+import org.heigit.ors.routing.graphhopper.extensions.flagencoders.FlagEncoderNames;
 import org.heigit.ors.routing.graphhopper.extensions.util.ORSPMap;
 import org.heigit.ors.routing.parameters.VehicleParameters;
 import org.heigit.ors.routing.parameters.WheelchairParameters;
@@ -68,7 +70,12 @@ public class ORSEdgeFilterFactory implements EdgeFilterFactory {
             if (params.hasObj("avoid_borders")) {
                 edgeFilters.add(new AvoidBordersEdgeFilter((RouteSearchParameters) params.getObj("avoid_borders"), gs));
             }
-            
+
+            // add variable speed core edge filter
+            if (flagEncoder.toString().equals(FlagEncoderNames.CAR_ORS)) {
+                edgeFilters.add(new VariableSpeedCoreEdgeFilter(gs, flagEncoder));
+            }
+
         } catch (Exception ex) {
             LOGGER.error(ex);
         }
