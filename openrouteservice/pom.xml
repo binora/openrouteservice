@@ -91,6 +91,7 @@
                 <directory>../openrouteservice-api-tests/conf</directory>
                 <includes>
                     <include>ors-config-test.json</include>
+                    <include>ors-config-gojek.json</include>
                 </includes>
                 <filtering>true</filtering>
             </testResource>

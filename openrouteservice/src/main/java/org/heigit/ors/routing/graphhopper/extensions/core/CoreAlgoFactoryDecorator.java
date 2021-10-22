@@ -382,6 +382,11 @@ public class CoreAlgoFactoryDecorator implements RoutingAlgorithmFactoryDecorato
             edgeFilterSequence.add(new TimeDependentCoreEdgeFilter(gs));
         }
 
+        // add variable speed core edge filter
+        if (encodingManager.hasEncoder(FlagEncoderNames.CAR_ORS)) {
+            edgeFilterSequence.add(new VariableSpeedCoreEdgeFilter(gs, encodingManager.getEncoder(FlagEncoderNames.CAR_ORS)));
+        }
+
         return edgeFilterSequence;
     }
 
