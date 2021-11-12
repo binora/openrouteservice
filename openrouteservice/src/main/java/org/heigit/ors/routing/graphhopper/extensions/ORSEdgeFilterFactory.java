@@ -71,11 +71,6 @@ public class ORSEdgeFilterFactory implements EdgeFilterFactory {
                 edgeFilters.add(new AvoidBordersEdgeFilter((RouteSearchParameters) params.getObj("avoid_borders"), gs));
             }
 
-            // add variable speed core edge filter
-            if (flagEncoder.toString().equals(FlagEncoderNames.CAR_ORS)) {
-                edgeFilters.add(new VariableSpeedCoreEdgeFilter(gs, flagEncoder));
-            }
-
         } catch (Exception ex) {
             LOGGER.error(ex);
         }

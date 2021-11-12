@@ -52,10 +52,12 @@ import org.heigit.ors.matrix.algorithms.core.CoreMatrixAlgorithm;
 import org.heigit.ors.routing.configuration.RouteProfileConfiguration;
 import org.heigit.ors.routing.graphhopper.extensions.*;
 import org.heigit.ors.routing.graphhopper.extensions.storages.GraphStorageUtils;
+import org.heigit.ors.routing.graphhopper.extensions.storages.SpeedStorage;
 import org.heigit.ors.routing.graphhopper.extensions.storages.builders.BordersGraphStorageBuilder;
 import org.heigit.ors.routing.graphhopper.extensions.storages.builders.GraphStorageBuilder;
 import org.heigit.ors.routing.graphhopper.extensions.util.ORSPMap;
 import org.heigit.ors.routing.graphhopper.extensions.util.ORSParameters;
+import org.heigit.ors.routing.graphhopper.extensions.util.VariableSpeedCalculator;
 import org.heigit.ors.routing.parameters.ProfileParameters;
 import org.heigit.ors.routing.pathprocessors.ORSPathProcessorFactory;
 import org.heigit.ors.services.isochrones.IsochronesServiceSettings;
@@ -639,6 +641,10 @@ public class RoutingProfile {
                 RouteSearchContext searchCntx = createSearchContext(req.getSearchParameters());
                 ORSPMap additionalHints = (ORSPMap) searchCntx.getProperties();
                 edgeFilter = this.mGraphHopper.getEdgeFilterFactory().createEdgeFilter(additionalHints, flagEncoder, this.mGraphHopper.getGraphHopperStorage());
+
+                // set variable speed calculator
+                SpeedStorage speedStorage = GraphStorageUtils.getGraphExtension(gh.getGraphHopperStorage(), SpeedStorage.class);
+                weighting.setSpeedCalculator(new VariableSpeedCalculator(weighting.getSpeedCalculator(), speedStorage));
             }
             else
                 graph = gh.getGraphHopperStorage().getBaseGraph();
