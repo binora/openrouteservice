@@ -73,7 +73,7 @@ public class SpeedStorage implements GraphExtension {
     }
 
     public boolean hasSpeed(int edgeId, boolean reverse) {
-        return this.getSpeed(edgeId, reverse) != Byte.MIN_VALUE;
+        return this.getSpeed(edgeId, reverse) != Byte.MIN_VALUE && this.getSpeed(edgeId, reverse) != 0;
     }
 
     @Override
